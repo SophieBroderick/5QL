@@ -1,0 +1,232 @@
+<script> if (window.innerWidth < 770) { window.location.href = 'https://player.vimeo.com/video/1085871956'; }</script>
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>5 Q L</title>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <link href="styles.css" rel="stylesheet">
+   </head>
+   <body>
+      <div id="header">
+          <div style="padding-left:30px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size:16px;margin-top:3px;cursor:pointer;">5 Q L</span>
+
+              <div id="datasource-bar" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                  <span style="font-size: 14px;">Database</span>
+                  <select id="datasource" style="width: 200px; padding: 3px;">
+                      <option value="books-demo">Books & Authors Demo</option>
+                      <option value="chinook">Chinook Sample DB</option>
+                      <option value="sqlite">SQLite File</option>
+                  </select>
+                  <input type="file" id="databaseFile" class="hidden" accept=".sqlite,.db" onchange="loadSQLiteLocal(event);" />
+              </div>
+
+              <div class="toggle-switch" style="margin-right: 20px;">
+                  <label class="switch">
+                      <input type="checkbox" id="viewToggle">
+                      <span class="slider round"></span>
+                      <span class="toggle-label" style="margin-right:90px;">Data</span>
+                      <span class="toggle-label">SQL</span>
+                  </label>
+              </div>
+          </div>
+      </div>
+
+      <div id="container" class="container">
+          <!-- First row with merged columns -->
+          <div class="row">
+              <div class="col col-12 col-md-3">
+                  <div id="tvw">
+                      <ul class="tree-view"></ul>
+                  </div>
+              </div>
+              <div class="col col-12 col-md-9" style="overflow-y: auto; max-height: 100%; padding: 0;">
+                  <svg id="datagrid" style="width: 100%; min-height: 100%;">
+                  </svg>
+                  <svg id="sqlbox" style="width: 100%; height: 100%;">
+                      <foreignObject width="100%" height="100%" x="0" y="0">
+                          <div xmlns="http://www.w3.org/1999/xhtml"
+                               style="width: 100%; height: 100%; overflow-y: auto; padding: 10px;">
+                              <textarea id="sqlstmt" oninput="sqlChange();" style="width: 100%;height: 100%;font-family: monospace;resize: none;border: none;padding: 10px;line-height: 1.4;color: #333;"></textarea>
+                          </div>
+                      </foreignObject>
+                  </svg>
+              </div>
+          </div>
+
+          <!-- Second row with three equal columns -->
+          <div class="row">
+              <div class="col col-12 col-md-3">
+                  <div style="height: 100%; width: 100%; display: flex; flex-direction: column;">
+                      <select id="selectedObject" style="width: 100%; padding: 4px; margin-bottom: 4px; border: 1px solid #dee2e6;">
+                          <option value=""></option>
+                      </select>
+                      <div style="height: 160px; width: 100%; overflow: auto;">
+                        <div style="height: 600px; width: 100%;">
+                            <svg id="propbox" style="width: 100%; height: 600px;">
+                                <rect x="0" y="0" width="100%" height="100%" fill="#e9ecef" stroke="#dee2e6"/>
+                                <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle"></text>
+                            </svg>
+                        </div>
+                      </div>
+                  </div>
+              </div>
+              <div class="col col-12 col-md-6 xx">
+                <svg id="where">
+                    <g id="grid-content"></g>
+                </svg>
+              </div>
+              <div class="col col-12 col-md-3">
+                  <svg id="orderby">
+                      <rect x="0" y="0" fill="#e9ecef" stroke="#dee2e6"/>
+                      <text x="0" y="0" text-anchor="left" dominant-baseline="top"></text>
+                  </svg>
+              </div>
+          </div>
+      </div>
+      <div id="footer">
+          <a href="https://github.com/SophieBroderick/5QL" class="github" target="_blank">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" class="social-logo" style="width: 20px; height: 20px;">
+          </a>          
+          <a href='https://sophiebroderick.com' style="margin-left: 10px;min-width: 140px;">©2025 Sophie Broderick</a>
+          <button id="videoWalkthroughBtn" onclick="document.getElementById('videoOverlay').style.display='flex';" class="button-4" role="button">Video Walkthrough</button>
+      </div>
+
+      <!-- Video Overlay -->
+      <div id="videoOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:10000; align-items:center; justify-content:center;">
+        <div style="position:relative; width:80vw; max-width:900px; aspect-ratio:16/9; margin:auto;">
+          <iframe id="vimeoPlayer" src="https://player.vimeo.com/video/1085871956" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="border-radius:8px;"></iframe>
+          <button id="closeVideoOverlay" style="position:absolute; top:10px; right:10px; background:#fff; border:none; border-radius:50%; width:32px; height:32px; font-size:20px; cursor:pointer;">&times;</button>
+        </div>
+      </div>
+
+      <!-- Bootstrap JS and dependencies -->
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+      <!-- SQL-JS https://github.com/sql-js/sql.js  -->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+
+      <script src="ast.js"></script>
+
+      <script src="ui.js"></script>
+
+      <script src="db.js"></script>
+
+      <!-- Demo Overlay -->
+      <svg id="demo-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 9999;"  onclick="document.getElementById('demo-overlay').style.display='none'" >
+        <rect width="100%" height="100%" fill="rgba(0, 0, 0, 0.4)" />
+
+        <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="white">
+                <polygon points="0 0, 10 3.5, 0 7" />
+            </marker>
+        </defs>
+        <text x="30" y="15" text-anchor="left" dominant-baseline="central" font-weight="bold" font-size="16px" fill="white">5 Q L</text>
+		<g id="diagram">
+          <g id="step1">
+            <path d="M 450,120 C 350,100 250,100 180,120" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+
+          <circle cx="450" cy="125" r="15" fill="white"/>
+          <text x="450" y="125" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="20px">1</text>
+
+          <text x="480" y="120" fill="white" font-size="22px" font-family="sans-serif">
+              <tspan>Explore your database objects</tspan>
+              <tspan x="480" dy="1.2em">in the tree view.</tspan>
+          </text>
+          </g>
+          <g id="step2" style="display:none;">
+          <path d="M 600,240 C 350,150 250,150 180,190" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+          
+          <circle cx="600" cy="245" r="15" fill="white"/>
+          <text x="600" y="245" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="20px">2</text>
+
+          <text x="630" y="240" fill="white" font-size="22px" font-family="sans-serif">
+              <tspan>Expand FK columns to create joins</tspan>
+              <tspan x="630" dy="1.2em">(here, connect authors)</tspan>
+          </text>
+          </g>
+          <g id="step3" style="display:none;">
+          <path d="M 950,355 C 980,300 1000,200 1230,40" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+
+          <circle cx="950" cy="355" r="15" fill="white"/>
+          <text x="950" y="355" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="20px">3</text>
+
+          <text x="980" y="360" fill="white" font-size="22px" font-family="sans-serif">
+              <tspan>View the SQL and change it</tspan>
+          </text>
+          </g>
+          <g id="step4" style="display:none;">
+          <path d="M 450,420 C 350,520 250,520 180,490" stroke="white" stroke-width="3" fill="none" marker-end="url(#arrowhead)" />
+
+          <circle cx="450" cy="425" r="15" fill="white"/>
+          <text x="450" y="425" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="20px">4</text>
+
+          <text x="480" y="430" fill="white" font-size="22px" font-family="sans-serif">
+              <tspan>Where no FK exists, it offers possible joins</tspan>
+          </text>
+          </g>
+		</g>
+		  
+        <g style="cursor: pointer;">
+            <circle cx="98%" cy="4%" r="15" fill="white"/>
+            <text x="98%" y="4%" font-family="sans-serif" font-size="20px" fill="black" text-anchor="middle" dominant-baseline="central" font-weight="bold">X</text>
+        </g>
+      </svg>
+	  <script>
+        document.addEventListener('DOMContentLoaded', function() {			
+            setTimeout(() => {
+                document.getElementById('step2').style.display = '';
+                if (document.getElementById('demo-overlay').style.display!='none') expandNodeByName('AuthorKey');
+            }, 2000);
+            setTimeout(() => {
+              if (document.getElementById('demo-overlay').style.display!='none') {
+                document.getElementById('step3').style.display = '';
+                document.getElementById('sqlstmt').value = "SELECT Title,ISBN,Authors.Name AS Authors_Name FROM Books LEFT OUTER JOIN Authors ON Books.AuthorKey=Authors.ID WHERE Title <> '1984' ";
+                sqlChange();
+
+                const toggle = document.getElementById('viewToggle');
+                toggle.checked = !toggle.checked;
+                toggle.dispatchEvent(new Event('change', { bubbles: true }));
+                setTimeout(() => {
+                    toggle.checked = !toggle.checked;
+                    toggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }, 1200);
+              }
+            }, 4000);
+            setTimeout(() => {
+                document.getElementById('step4').style.display = '';
+            }, 6000);
+        });
+    
+	    document.getElementById('diagram').setAttribute('transform', `translate(${document.getElementById('container').offsetLeft-20} 0)`);
+	    if (getCookie('ShowDiagram')?.toLowerCase() === 'false') document.getElementById('demo-overlay').style.display='none';
+		setCookie('ShowDiagram', 'false', 3650);		
+	  </script>
+      <script>
+        // Close overlay when clicking outside the video player
+        var videoOverlay = document.getElementById('videoOverlay');
+        if (videoOverlay) {
+          videoOverlay.onclick = function(e) {
+            if (e.target === this) this.style.display = 'none';
+          };
+        }
+        var closeBtn = document.getElementById('closeVideoOverlay');
+        if (closeBtn) {
+          closeBtn.onclick = function(e) {
+            videoOverlay.style.display = 'none';
+            e.stopPropagation();
+          };
+        }
+      </script>
+   </body>
+   <!-- Google Analytics -->
+   <script async src="https://www.googletagmanager.com/gtag/js?id=G-M1LQ5H3639"></script>
+   <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-M1LQ5H3639');
+    </script>
+</html>
