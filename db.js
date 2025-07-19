@@ -71,6 +71,7 @@ const sampleFile = {
             'Invoice_Items.InvoiceId':'Invoices.InvoiceId','Invoice_Items.TrackId':'Tracks.TrackId',
             'Playlist_Track.PlaylistId':'Playlists.PlaylistId','Playlist_Track.TrackId':'Tracks.TrackId',
             'Tracks.AlbumId':'Albums.AlbumId','Tracks.MediaTypeId':'Media_Types.MediaTypeId','Tracks.GenreId':'Genres.GenreId'}
+            /* A shortcut: normally find these from Foreign Key constraints, a data dictionary, or mining existing queries */
     }
 }
 
@@ -464,6 +465,32 @@ function extractOrderByColumns(orderByClause) {
     return orderByItems;
 }
 
+function loadLinksBacklinks(dbname) {
+    // If demo load directly.  (Normally find these from Foreign Key constraints, a data dictionary, or mining existing queries)
+    if (dbname && sampleFile[dbname] && sampleFile[dbname].links)  {
+        Object.entries(sampleFile[dbname].links).forEach(([fk, pk]) => {            
+            metadata[fk].Links = pk;
+            (metadata[pk].Backlinks ??= []).push(fk);
+        });
+        return;
+    }
+
+    const tables = [];
+    for (key of Object.keys(metadata)) if (metadata[key].Object == "Table") tables.push(key);
+    for (key of Object.keys(metadata)) {
+        if (metadata[key].Object == "Column") {
+            const table = key.split('.')[0];
+            const col = key.split('.')[1];
+            const fkcol = col.replace(/(?:key|ID)$/i, '');
+            const fktable = tables.find(item => item === fkcol || item === fkcol+'s') || null;
+            if (fktable) {
+                metadata[key].Links = `${fktable}.ID`; // for now
+                metadata[`${fktable}.ID`].Backlinks = key;
+            }
+        }
+    }
+}
+
 function loadSQLiteRemote(dbname) {
     if (sampleFile[dbname]) {        
         fetch(sampleFile[dbname].url)
@@ -482,7 +509,7 @@ function loadSQLiteRemote(dbname) {
 function loadSQLiteLocal(evt) {
     const file = evt.target.files?.[0];
     if (!file) return;
-    file.arrayBuffer().then(buffer => loadSQLiteDB(buffer));
+    file.arrayBuffer().then(buffer => loadSQLiteDB(buffer, file.name));
 }
 
 function loadSQLiteDB(buffer, dbname) {
@@ -490,11 +517,12 @@ function loadSQLiteDB(buffer, dbname) {
     // Read tables from sqlite_master
     const tables = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';");
     metadata = {};
+    const backlinks = [];
     if (tables.length > 0) {
         // Add database-level metadata
         metadata[""] = {
             Object: "Database",
-            Name: 'Chinook',
+            Name: dbname,
             "Database Type": "SQLite",
             "Host Name": "",
             Port: "",
@@ -502,13 +530,13 @@ function loadSQLiteDB(buffer, dbname) {
             Persist: "",
             Description: ""
         };
-        tables[0].values.forEach(([tableName]) => {
-            // Add table metadata
+        for (tableNames of tables[0].values) {
+            const tableName = Array.isArray(tableNames) ? tableNames[0] : tableNames;
             metadata[tableName] = { Object: "Table", Name: tableName, Description: "" };
             // Get columns for this table
             const pragma = db.exec(`PRAGMA table_info(${tableName});`);
             if (pragma.length > 0) {
-                pragma[0].values.forEach(col => {
+                for (col of pragma[0].values) {                
                     const [cid, name, type, notnull, dflt_value, pk] = col;
                     metadata[`${tableName}.${name}`] = {
                         Object: "Column",
@@ -517,10 +545,10 @@ function loadSQLiteDB(buffer, dbname) {
                         Table: tableName,
                         Description: ""
                     };
-                    if (dbname && sampleFile[dbname].links[`${tableName}.${name}`])  metadata[`${tableName}.${name}`].Links = sampleFile[dbname].links[`${tableName}.${name}`];
-                });
+                }
             }
-        });
+        }
+        loadLinksBacklinks(dbname);
     }
     loadDB();
 }
